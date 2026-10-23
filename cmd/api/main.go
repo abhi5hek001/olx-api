@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
+	"github.com/abhi5hek001/olx-api/internal/config"
 )
 
 func main() {
+	cfg := config.MustLoad()
+	
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request){
@@ -17,13 +22,15 @@ func main() {
 	})
 
 	srv := http.Server{
-		Addr: ":8090",
+		Addr: ":" + cfg.PORT,
 		Handler: mux,
 		ReadTimeout: time.Second*10,
 		WriteTimeout: time.Second*30,
 		IdleTimeout: time.Second*60,
 	}
 
+	fmt.Printf(`Server started on: https://localhost:%v`,os.Getenv("PORT"))
+	
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
