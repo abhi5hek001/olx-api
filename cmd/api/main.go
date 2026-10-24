@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
 	"github.com/abhi5hek001/olx-api/internal/config"
+	"github.com/abhi5hek001/olx-api/internal/handler"
 )
 
 func main() {
@@ -14,12 +16,7 @@ func main() {
 	
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request){
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-		w.Write([]byte(`{"status": "ok"}`))
-	})
+	mux.HandleFunc("GET /healthz", handler.Health)
 
 	srv := http.Server{
 		Addr: ":" + cfg.PORT,
@@ -35,3 +32,4 @@ func main() {
 		log.Fatalf("server failed: %v", err)
 	}
 }
+ 
