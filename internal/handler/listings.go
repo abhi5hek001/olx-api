@@ -7,6 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/abhi5hek001/olx-api/cmd/middleware"
+	"github.com/abhi5hek001/olx-api/internal/httpx"
 )
 
 type listing struct {
@@ -33,6 +36,8 @@ func NewListingHandler(db *sql.DB, logger *slog.Logger) *ListingHandler {
 func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 	// request scoped context
 	ctx := r.Context()
+	requestId := middleware.RequestIdFromContext(ctx)
+	id := r.PathValue("id")
 
 	rows, err := lh.db.QueryContext(ctx,
 		`SELECT id, title, description, price, city, created_at
@@ -49,7 +54,8 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 		var l listing
 		if err := rows.Scan(&l.ID, &l.Title, &l.Description, &l.Price, &l.City, &l.CreatedAt); err != nil {
 			log.Printf("rows.scan: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			lh.logger.Error("listing failed", "listing_id", id, "request_id", requestId, "err", err)
+			httpx.Error(w, http.StatusInternalServerError, "Something went wrong", httpx.CodeInternalError)
 			return
 		}
 
@@ -58,28 +64,28 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	if err := rows.Err(); err != nil {
 		log.Printf("rows.err: %v", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, "Something went wrong", httpx.CodeInternalError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
+	
 	_ = json.NewEncoder(w).Encode(listings)
 }
 
 func (lh ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+	requestId := middleware.RequestIdFromContext(ctx)
 	id := r.PathValue("id")
 
 	_, err := lh.db.ExecContext(ctx, `DELETE FROM listing WHERE id = $1`, id)
 	if err != nil {
 		// log.Printf("delete: %v", err)
-		lh.logger.Error("delete failed", "listing_id", id, "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		lh.logger.Error("delete failed", "listing_id", id, "request_id", requestId, "err", err)
+		httpx.Error(w, http.StatusInternalServerError, "Something went wrong", httpx.CodeInternalError)
 		return
 	}
-
+	
 	w.WriteHeader(http.StatusNoContent)
 }
