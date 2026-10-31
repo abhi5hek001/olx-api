@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -19,11 +20,13 @@ type listing struct {
 
 type ListingHandler struct {
 	db *sql.DB
+	logger *slog.Logger
 }
 
-func NewListingHandler(db *sql.DB) *ListingHandler {
+func NewListingHandler(db *sql.DB, logger *slog.Logger) *ListingHandler {
 	return &ListingHandler{
 		db: db,
+		logger: logger,
 	}
 }
 
@@ -70,9 +73,10 @@ func (lh ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	
 	id := r.PathValue("id")
 
-	_, err := lh.db.ExecContext(ctx, `DELETE FROM listings WHERE id = $1`, id)
+	_, err := lh.db.ExecContext(ctx, `DELETE FROM listing WHERE id = $1`, id)
 	if err != nil {
-		log.Printf("delete: %v", err)
+		// log.Printf("delete: %v", err)
+		lh.logger.Error("delete failed", "listing_id", id, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
