@@ -37,7 +37,17 @@ func (req CreateListingRequest) Validate() error {
 		return &ValidationError{Field: "title", Msg: "must not be empty"}
 	}
 
-	// for other fields
+	if strings.TrimSpace(req.Description) == "" {
+		return &ValidationError{Field: "Description", Msg: "must not be empty"}
+	}
+	
+	if req.Price < 0 {
+		return &ValidationError{Field: "Price", Msg: "must be greater than zero"}
+	}
+	
+	if strings.TrimSpace(req.City) == "" {
+		return &ValidationError{Field: "City", Msg: "must not be empty"}
+	}
 
 	return nil
 }
